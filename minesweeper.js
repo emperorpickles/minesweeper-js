@@ -9,10 +9,13 @@ var gameWidth = tilesX * tileSize;
 var gameHeight = tilesY * tileSize;
 var tiles = [];
 
+var start;
+var end;
+
 
 function setup() {
-    createCanvas(gameWidth, gameHeight);
-    frameRate(24);
+    let canvas = createCanvas(gameWidth, gameHeight);
+    canvas.parent('minesweeperjs');
     noLoop();
 
     createBoard();
@@ -46,10 +49,6 @@ function createBoard() {
             let tile = tiles[j];
             if (tile) { tile.bombsNearby = tile.bombsNearby + 1 || 1 }
         });
-        // dirs.forEach(j => {
-        //     let tile = tiles[(i+j)];
-        //     if (tile) { tile.bombsNearby = tile.bombsNearby + 1 || 1 }
-        // });
     });
 
     console.log(tiles);
@@ -60,10 +59,14 @@ function mouseClicked() {
     var posY = Math.floor(mouseY / tileSize);
     if (mouseX > width || mouseY > height) return;
     console.log(`[${posX}, ${posY}]`);
-    
+
     var tile = tiles[gridToIndex(posX, posY)];
-    tile.clear();
-    // console.log(getAdjacent(gridToIndex(posX, posY)));
+
+    if (keyIsPressed === true && keyCode === CONTROL) {
+        tile.flagged = !tile.flagged;
+        redraw();
+    }
+    else { tile.clear() }   
 }
 
 function gridToIndex(x, y) {
@@ -104,18 +107,11 @@ var Tile = {
         return this;
     },
     show: function() {
-        if (this.isBomb) {
-            // tile is red if bomb
-            fill(230, 30, 75);
-        }
-        else if (this.cleared) {
-            // light grey for cleared tiles
-            fill(200);
-        }
-        else {
-            // default tile color
-            fill(40);
-        }
+        if (this.isBomb) { fill(230, 30, 75) }
+        else if (this.cleared) { fill(200) }
+        else if (this.flagged) { fill(60, 80, 180) }
+        else { fill(40) }
+        
         // draw settings for tile
         stroke(160);
         rect((this.x), (this.y), tileSize, tileSize);
@@ -126,7 +122,7 @@ var Tile = {
         // else fill(255);
         // textAlign(CENTER, CENTER);
         // text(this.i, (this.x+tileSize/2), (this.y+tileSize/2));
-        
+
         if (this.bombsNearby && this.cleared) {
             // add numbers for nearby bombs on cleared tiles
             fill(20);
@@ -134,31 +130,38 @@ var Tile = {
             text(this.bombsNearby, (this.x+tileSize/2), (this.y+tileSize/2));
         }
     },
-    hello: function() {
-        // debugging function for outputing tile location
-        console.log(`Hello! I live at [${this.x}, ${this.y}]`);
-        console.log(this);
-    },
     clear: function() {
-        if (!this.bombsNearby && !this.cleared) {
-            // recursively clear empty tiles
-            // TODO - very slow
-            this.cleared = true;
-
-            var adjTiles = getAdjacent(this.i);
-            adjTiles.forEach(j => {
-                let tile = tiles[j];
-                if (tile) { tile.clear(); }
-            });
-
-            // dirs.forEach(j => {
-            //     let tile = tiles[(this.i+j)];
-            //     if (tile) { tile.clear(); }
-            // });
+        start = window.performance.now();
+        if (this.flagged) { return }
+        else if (!this.bombsNearby && !this.cleared) {
+            this.recursiveClear();
         }
         else if (!this.isBomb) {
             this.cleared = true;
         }
         redraw();
+        end = window.performance.now();
+        console.log(`clear execution time: ${end - start} ms`);
+    },
+    recursiveClear: function() {
+        // recursively clear empty tiles
+        // TODO - very slow /// FIXED - previous method repeatedly called redraw() adding 5-10ms each time
+        if (this.flagged) { return }
+        else if (!this.bombsNearby && !this.cleared) {
+            this.cleared = true;
+            var adjTiles = getAdjacent(this.i);
+            adjTiles.forEach(j => {
+                let tile = tiles[j];
+                if (tile) { tile.recursiveClear(); }
+            });
+        }
+        else if (!this.isBomb) {
+            this.cleared = true;
+        }
+    },
+    hello: function() {
+        // debugging function for outputing tile location
+        console.log(`Hello! I live at [${this.x}, ${this.y}]`);
+        console.log(this);
     }
 }
