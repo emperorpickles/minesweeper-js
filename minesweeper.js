@@ -37,8 +37,8 @@ function create() {
     
     numMines = Math.min(UI.input.mineInput, tiles.length - 2);
     
-    resizeCanvas(boardWidth, boardHeight + 30);
     UI.bottomBar.init(10, boardHeight + 15);
+    resizeCanvas(boardWidth, boardHeight + 30);
     console.log(`${tilesX}, ${tilesY}, ${numMines}, ${boardWidth}`);
 }
 
@@ -105,7 +105,7 @@ function setMines(index) {
     console.log(tiles.filter(tile => tile.isMine).length);
 }
 
-function mouseClicked() {
+function mousePressed() {
     var posX = Math.floor(mouseX / tileSize);
     var posY = Math.floor(mouseY / tileSize);
     var index = gridToIndex(posX, posY);
