@@ -99,7 +99,7 @@ function mouseClicked() {
         gameState = '';
         tile.clear();
     }
-    else if (keyIsPressed === true && keyCode === CONTROL) {
+    else if (keyIsPressed === true && keyCode === CONTROL && !tile.cleared) {
         tile.flagged = !tile.flagged;
         if (tile.flagged) tilesFlagged++;
         else tilesFlagged--;
@@ -146,7 +146,7 @@ var Tile = {
         return this;
     },
     show: function () {
-        if (this.isMine) { fill(230, 30, 75) }
+        if (this.isMine && this.cleared) { fill(230, 30, 75) }
         else if (this.cleared) { fill(200) }
         else if (this.flagged) { fill(60, 80, 180) }
         else { fill(40) }
