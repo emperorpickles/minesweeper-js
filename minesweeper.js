@@ -1,7 +1,7 @@
 // board settings
 var tilesX = 16;
 var tilesY = 16;
-var numMines = 200;
+var numMines = 40;
 
 var tileSize = 30;
 
@@ -10,7 +10,7 @@ var boardHeight = tilesY * tileSize;
 var tiles = [];
 
 var tilesFlagged = 0;
-var newGame = true;
+var gameState = 'new_game';
 
 var start;
 var end;
@@ -24,14 +24,34 @@ function setup() {
     createBoard();
     UI.bottomBar.init(10, boardHeight + 15);
 }
-  
+
 function draw() {
     background(80);
     for (let t in tiles) {
         tiles[t].show();
     }
-
     UI.bottomBar.show();
+
+    if (tiles.filter(tile => tile.isMine && tile.flagged).length === numMines ||
+        tiles.filter(tile => tile.cleared).length === tiles.length - numMines) {
+        gameState = 'victory';
+    }
+
+    switch (gameState) {
+        case 'gameover':
+            fill(20);
+            textSize(50);
+            textAlign(CENTER, CENTER);
+            text("Gameover!", boardWidth / 2, boardHeight / 2);
+            break;
+        case 'victory':
+            fill(20);
+            textSize(50);
+            textAlign(CENTER, CENTER);
+            text("Victory!", boardWidth / 2, boardHeight / 2);
+            break;
+    }
+
 }
 
 function createBoard() {
@@ -69,13 +89,14 @@ function mouseClicked() {
     var posY = Math.floor(mouseY / tileSize);
     var index = gridToIndex(posX, posY);
     if (mouseX > boardWidth || mouseX < 0 || mouseY > boardHeight || mouseY < 0) return;
+    else if (gameState === 'victory' || gameState === 'gameover') return;
     console.log(`[${posX}, ${posY}]`);
 
     var tile = tiles[index];
 
-    if (newGame) {
+    if (gameState === 'new_game') {
         setMines(index);
-        newGame = false;
+        gameState = '';
         tile.clear();
     }
     else if (keyIsPressed === true && keyCode === CONTROL) {
@@ -84,7 +105,7 @@ function mouseClicked() {
         else tilesFlagged--;
         redraw();
     }
-    else { tile.clear() }   
+    else { tile.clear() }
 }
 
 function gridToIndex(x, y) {
@@ -98,12 +119,12 @@ function getAdjacent(index) {
     4 5 6   :   -tilesY    ,  0, tilesY
     7 8 9   :   -(tilesY-1),  1, (tilesY+1)
     */
-    var dirs = [-(tilesY+1), -1, (tilesY-1), -tilesY, 0, tilesY, -(tilesY-1), 1, (tilesY+1)];
+    var dirs = [-(tilesY + 1), -1, (tilesY - 1), -tilesY, 0, tilesY, -(tilesY - 1), 1, (tilesY + 1)];
     if (index % tilesY == 0) {
         // if starting in top row remove upper checks
         dirs = dirs.slice(3);
     }
-    else if (index % tilesY == tilesY-1) {
+    else if (index % tilesY == tilesY - 1) {
         // if starting in bottom row remove lower checks
         dirs = dirs.slice(0, 6);
     }
@@ -118,18 +139,18 @@ function getAdjacent(index) {
 
 // Tile Module
 var Tile = {
-    init: function(x, y) {
+    init: function (x, y) {
         this.x = x * tileSize;
         this.y = y * tileSize;
         this.i = gridToIndex(x, y);
         return this;
     },
-    show: function() {
+    show: function () {
         if (this.isMine) { fill(230, 30, 75) }
         else if (this.cleared) { fill(200) }
         else if (this.flagged) { fill(60, 80, 180) }
         else { fill(40) }
-        
+
         // draw settings for tile
         stroke(160);
         rect((this.x), (this.y), tileSize, tileSize);
@@ -145,10 +166,10 @@ var Tile = {
             // add numbers for nearby mines on cleared tiles
             fill(20);
             textAlign(CENTER, CENTER);
-            text(this.minesNearby, (this.x+tileSize/2), (this.y+tileSize/2));
+            text(this.minesNearby, (this.x + tileSize / 2), (this.y + tileSize / 2));
         }
     },
-    clear: function() {
+    clear: function () {
         start = window.performance.now();
         if (this.flagged) { return }
         else if (!this.minesNearby && !this.cleared) {
@@ -157,11 +178,14 @@ var Tile = {
         else if (!this.isMine) {
             this.cleared = true;
         }
+        else {
+            gameState = 'gameover';
+        }
         redraw();
         end = window.performance.now();
         console.log(`clear execution time: ${end - start} ms`);
     },
-    recursiveClear: function() {
+    recursiveClear: function () {
         // recursively clear empty tiles
         // TODO - very slow /// FIXED - previous method repeatedly called redraw() adding 5-10ms each time
         if (this.flagged) { return }
@@ -177,7 +201,7 @@ var Tile = {
             this.cleared = true;
         }
     },
-    hello: function() {
+    hello: function () {
         // debugging function for outputing tile location
         console.log(`Hello! I live at [${this.x}, ${this.y}]`);
         console.log(this);
@@ -187,15 +211,15 @@ var Tile = {
 // UI Module
 var UI = {
     bottomBar: {
-        init: function(x, y) {
+        init: function (x, y) {
             this.y = y;
             this.x = x;
             return this;
         },
-        show: function() {
+        show: function () {
             fill(240);
             textAlign(LEFT, CENTER);
-            text(`Mines: ${numMines-tilesFlagged}`, (this.x), (this.y));
+            text(`Mines: ${numMines - tilesFlagged}`, (this.x), (this.y));
         }
     }
 }
