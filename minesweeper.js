@@ -1,14 +1,16 @@
 // board settings
 var tilesX = 16;
 var tilesY = 16;
-var numMines = 40;
+var numMines = 200;
 
 var tileSize = 30;
 
 var boardWidth = tilesX * tileSize;
 var boardHeight = tilesY * tileSize;
 var tiles = [];
+
 var tilesFlagged = 0;
+var newGame = true;
 
 var start;
 var end;
@@ -38,9 +40,18 @@ function createBoard() {
             tiles.push(Object.create(Tile).init(x, y));
         }
     }
+    console.log(tiles);
+}
 
-    // create array of len(numMines) filled with random values from 0 -> tiles.length
-    var mineIndexes = Array(numMines).fill().map((_) => {return Math.floor(Math.random() * tiles.length)});
+function setMines(index) {
+    // create array of len(numMines) filled with random unique values from 0 -> tiles.length
+    var mineIndexes = new Array(numMines).fill().map((_, i, a) => {
+        while (a.includes(rand) || rand === index) {
+            var rand = Math.floor(Math.random() * tiles.length);
+        }
+        a[i] = rand;
+        return rand;
+    });
     // set each tile in mineIndexes to be a mine and increment adjacent tiles' mine count
     mineIndexes.forEach(i => {
         tiles[i].isMine = true;
@@ -50,19 +61,24 @@ function createBoard() {
             if (tile) { tile.minesNearby = tile.minesNearby + 1 || 1 }
         });
     });
-
-    console.log(tiles);
+    console.log(tiles.filter(tile => tile.isMine).length);
 }
 
 function mouseClicked() {
     var posX = Math.floor(mouseX / tileSize);
     var posY = Math.floor(mouseY / tileSize);
-    if (mouseX > width || mouseY > height) return;
+    var index = gridToIndex(posX, posY);
+    if (mouseX > boardWidth || mouseX < 0 || mouseY > boardHeight || mouseY < 0) return;
     console.log(`[${posX}, ${posY}]`);
 
-    var tile = tiles[gridToIndex(posX, posY)];
+    var tile = tiles[index];
 
-    if (keyIsPressed === true && keyCode === CONTROL) {
+    if (newGame) {
+        setMines(index);
+        newGame = false;
+        tile.clear();
+    }
+    else if (keyIsPressed === true && keyCode === CONTROL) {
         tile.flagged = !tile.flagged;
         if (tile.flagged) tilesFlagged++;
         else tilesFlagged--;
