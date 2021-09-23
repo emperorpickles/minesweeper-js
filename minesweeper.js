@@ -1,31 +1,35 @@
 // board settings
 var tilesX = 16;
 var tilesY = 16;
-var numBombs = 40;
+var numMines = 40;
 
 var tileSize = 30;
 
-var gameWidth = tilesX * tileSize;
-var gameHeight = tilesY * tileSize;
+var boardWidth = tilesX * tileSize;
+var boardHeight = tilesY * tileSize;
 var tiles = [];
+var tilesFlagged = 0;
 
 var start;
 var end;
 
 
 function setup() {
-    let canvas = createCanvas(gameWidth, gameHeight);
+    let canvas = createCanvas(boardWidth, boardHeight + 30);
     canvas.parent('minesweeperjs');
     noLoop();
 
     createBoard();
+    UI.bottomBar.init(10, boardHeight + 15);
 }
   
 function draw() {
-    background(120);
+    background(80);
     for (let t in tiles) {
         tiles[t].show();
     }
+
+    UI.bottomBar.show();
 }
 
 function createBoard() {
@@ -35,19 +39,15 @@ function createBoard() {
         }
     }
 
-    // fill array with values from 0->tiles.length, then shuffle randomly
-    // TODO - simplify, don't really understand this method and sometimes produces weird results
-    var rand = Array(tiles.length).fill().map((_, i) => i++).sort(() => Math.random() - 0.5);
-    
-    // take the first numBombs number of values from array to fill with bombs
-    // also increment bombsNearby property for adjacent tiles
-    var bombIndexes = rand.slice(0, numBombs);
-    bombIndexes.forEach(i => {
-        tiles[i].isBomb = true;
+    // create array of len(numMines) filled with random values from 0 -> tiles.length
+    var mineIndexes = Array(numMines).fill().map((_) => {return Math.floor(Math.random() * tiles.length)});
+    // set each tile in mineIndexes to be a mine and increment adjacent tiles' mine count
+    mineIndexes.forEach(i => {
+        tiles[i].isMine = true;
         var adjTiles = getAdjacent(i);
         adjTiles.forEach(j => {
             let tile = tiles[j];
-            if (tile) { tile.bombsNearby = tile.bombsNearby + 1 || 1 }
+            if (tile) { tile.minesNearby = tile.minesNearby + 1 || 1 }
         });
     });
 
@@ -64,6 +64,8 @@ function mouseClicked() {
 
     if (keyIsPressed === true && keyCode === CONTROL) {
         tile.flagged = !tile.flagged;
+        if (tile.flagged) tilesFlagged++;
+        else tilesFlagged--;
         redraw();
     }
     else { tile.clear() }   
@@ -98,7 +100,7 @@ function getAdjacent(index) {
     return indices;
 }
 
-
+// Tile Module
 var Tile = {
     init: function(x, y) {
         this.x = x * tileSize;
@@ -107,7 +109,7 @@ var Tile = {
         return this;
     },
     show: function() {
-        if (this.isBomb) { fill(230, 30, 75) }
+        if (this.isMine) { fill(230, 30, 75) }
         else if (this.cleared) { fill(200) }
         else if (this.flagged) { fill(60, 80, 180) }
         else { fill(40) }
@@ -123,20 +125,20 @@ var Tile = {
         // textAlign(CENTER, CENTER);
         // text(this.i, (this.x+tileSize/2), (this.y+tileSize/2));
 
-        if (this.bombsNearby && this.cleared) {
-            // add numbers for nearby bombs on cleared tiles
+        if (this.minesNearby && this.cleared) {
+            // add numbers for nearby mines on cleared tiles
             fill(20);
             textAlign(CENTER, CENTER);
-            text(this.bombsNearby, (this.x+tileSize/2), (this.y+tileSize/2));
+            text(this.minesNearby, (this.x+tileSize/2), (this.y+tileSize/2));
         }
     },
     clear: function() {
         start = window.performance.now();
         if (this.flagged) { return }
-        else if (!this.bombsNearby && !this.cleared) {
+        else if (!this.minesNearby && !this.cleared) {
             this.recursiveClear();
         }
-        else if (!this.isBomb) {
+        else if (!this.isMine) {
             this.cleared = true;
         }
         redraw();
@@ -147,7 +149,7 @@ var Tile = {
         // recursively clear empty tiles
         // TODO - very slow /// FIXED - previous method repeatedly called redraw() adding 5-10ms each time
         if (this.flagged) { return }
-        else if (!this.bombsNearby && !this.cleared) {
+        else if (!this.minesNearby && !this.cleared) {
             this.cleared = true;
             var adjTiles = getAdjacent(this.i);
             adjTiles.forEach(j => {
@@ -155,7 +157,7 @@ var Tile = {
                 if (tile) { tile.recursiveClear(); }
             });
         }
-        else if (!this.isBomb) {
+        else if (!this.isMine) {
             this.cleared = true;
         }
     },
@@ -163,5 +165,21 @@ var Tile = {
         // debugging function for outputing tile location
         console.log(`Hello! I live at [${this.x}, ${this.y}]`);
         console.log(this);
+    }
+}
+
+// UI Module
+var UI = {
+    bottomBar: {
+        init: function(x, y) {
+            this.y = y;
+            this.x = x;
+            return this;
+        },
+        show: function() {
+            fill(240);
+            textAlign(LEFT, CENTER);
+            text(`Mines: ${numMines-tilesFlagged}`, (this.x), (this.y));
+        }
     }
 }
