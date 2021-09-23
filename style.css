@@ -9,3 +9,15 @@ body {
     justify-content: center;
     align-items: center;
 }
+
+input {
+    width: 40px;
+    margin-right: 20px;
+}
+
+#input {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 75%;
+}

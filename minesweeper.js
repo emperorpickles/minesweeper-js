@@ -5,24 +5,41 @@ var numMines = 40;
 
 var tileSize = 30;
 
-var boardWidth = tilesX * tileSize;
-var boardHeight = tilesY * tileSize;
+var boardWidth;
+var boardHeight;
 var tiles = [];
 
 var tilesFlagged = 0;
-var gameState = 'new_game';
+var gameState;
 
 var start;
 var end;
 
 
 function setup() {
+    create();
     let canvas = createCanvas(boardWidth, boardHeight + 30);
     canvas.parent('minesweeperjs');
     noLoop();
+}
 
+function create() {
+    gameState = 'new_game';
+    tilesFlagged = 0;
+    UI.input.init();
+
+    tilesX = UI.input.xInput;
+    tilesY = UI.input.yInput;
+    tileWidth = windowWidth * .75 / tilesX;
+    tileHeight = windowHeight * .75 / tilesY;
+    tileSize = Math.min(tileWidth, tileHeight);
     createBoard();
+    
+    numMines = Math.min(UI.input.mineInput, tiles.length - 2);
+    
+    resizeCanvas(boardWidth, boardHeight + 30);
     UI.bottomBar.init(10, boardHeight + 15);
+    console.log(`${tilesX}, ${tilesY}, ${numMines}, ${boardWidth}`);
 }
 
 function draw() {
@@ -51,10 +68,14 @@ function draw() {
             text("Victory!", boardWidth / 2, boardHeight / 2);
             break;
     }
-
+    textSize(12);
 }
 
 function createBoard() {
+    tiles = [];
+    boardWidth = tilesX * tileSize;
+    boardHeight = tilesY * tileSize;
+
     for (let x = 0; x < tilesX; x++) {
         for (let y = 0; y < tilesY; y++) {
             tiles.push(Object.create(Tile).init(x, y));
@@ -220,6 +241,15 @@ var UI = {
             fill(240);
             textAlign(LEFT, CENTER);
             text(`Mines: ${numMines - tilesFlagged}`, (this.x), (this.y));
+            textAlign(CENTER, CENTER);
+            text('Left Click to Clear, Ctrl+Click to Flag', (boardWidth / 2), this.y);
+        }
+    },
+    input: {
+        init: function () {
+            this.mineInput = Number(select('#numMines').elt.value);
+            this.xInput = Number(select('#tilesX').elt.value);
+            this.yInput = Number(select('#tilesY').elt.value);
         }
     }
 }
